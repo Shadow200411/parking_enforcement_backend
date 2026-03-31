@@ -1,13 +1,31 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from contextlib import asynccontextmanager
 
-from app.api import endpoints  
+
+
+from app.api import endpoints, auth
+   
+from app.services.scheduler import scheduler, start_scheduler
+
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(app : FastAPI):
+    print("Starting background scheduler...")
+    start_scheduler()
+    yield
+    print("Stopping background scheduler...")
+    scheduler.shutdown()
 
 app = FastAPI(
     title="Parking Enforcement API",
     description="Backend for the AI-powered police car parking enforcement system.",
-    version="1.0.0"
+    version="1.0.0",
+    lifespan=lifespan
 )
+
 
 origins = [
     "http://localhost:3000",
@@ -28,5 +46,5 @@ app.add_middleware(
 async def health_check():
     return {"status": "healthy", "message": "Backend is running."}
 
-
+app.include_router(auth.router, prefix="/api/v1")
 app.include_router(endpoints.router, prefix="/api/v1")

@@ -7,6 +7,9 @@ from app.core.database import get_db
 from app.schemas.payloads import DetectionCreate, FlaggedCarResponse, FlagVerificationUpdate
 from app.services.decision_engine import process_detection
 from app.models.domain import FlaggedCar, Parking
+from app.api.auth import get_current_user
+from app.models.domain import User
+
 
 router = APIRouter(tags=["Enforcement"])
 
@@ -38,7 +41,8 @@ async def get_all_flags(db: AsyncSession = Depends(get_db)):
     return flags
 
 @router.patch("/flags/{flag_id}/verify", response_model=FlaggedCarResponse)
-async def verify_flag(flag_id: int, update_data: FlagVerificationUpdate, db: AsyncSession = Depends(get_db)):
+async def verify_flag(flag_id: int, update_data: FlagVerificationUpdate, db: AsyncSession = Depends(get_db),
+                      current_user: User = Depends(get_current_user)):
     """
     Used by a human officer to approve or reject a lo-confidence flag.
     """

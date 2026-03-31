@@ -6,5 +6,9 @@ asyncpg
 pydantic
 pydantic-settings
 PyJWT
-passlib[bcrypt]
+passlib
+bcrypt==3.2.2
 python-multipart
+apscheduler
+pytest
+httpx
