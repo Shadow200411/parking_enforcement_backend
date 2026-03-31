@@ -67,10 +67,12 @@ Go to `POST /api/v1/detections` and send a test payload, for example:
 }
 ```
 
-For quick json examples to be used in testing the api here is a "ready to paste" jsons file:
+The Decision Engine will process it instantly.
+
+Here is a ready-to-paste JSON file with quick examples for testing the API:
 https://drive.google.com/file/d/1IR5DtN1TuTWh9WhNF0gw7AlyHOCJfzdM/view?usp=sharing
 
-The Decision Engine will process it instantly.
+Make sure you take one at a time to test. Do not send all the file at once.
 
 ### 2. View the flags
 
