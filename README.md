@@ -60,9 +60,15 @@ Go to `POST /api/v1/detections` and send a test payload, for example:
 
 ```json
 {
-  "car_registration_no": "CJ-03-CCC"
+  "car_registration_no": "CD-01-AAA",
+  "parking_id": 1,
+  "confidence_score": 0.95,
+  "evidence_image_url": "/images/CD-01-AAA_evidence.jpg"
 }
 ```
+
+For quick json examples to be used in testing the api here is a "ready to paste" jsons file:
+https://drive.google.com/file/d/1IR5DtN1TuTWh9WhNF0gw7AlyHOCJfzdM/view?usp=sharing
 
 The Decision Engine will process it instantly.
 
