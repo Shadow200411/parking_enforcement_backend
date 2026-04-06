@@ -12,3 +12,8 @@ python-multipart
 apscheduler
 pytest
 httpx
+numpy==1.26.4
+opencv-python-headless==4.9.0.80
+paddleocr==2.7.3
+paddlepaddle==2.6.2
+Pillow==10.3.0

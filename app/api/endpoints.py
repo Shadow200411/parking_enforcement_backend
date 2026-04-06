@@ -4,14 +4,83 @@ from sqlalchemy import select
 from typing import List
 
 from app.core.database import get_db
-from app.schemas.payloads import DetectionCreate, FlaggedCarResponse, FlagVerificationUpdate
+from app.schemas.payloads import (
+    DetectionCreate,
+    FlaggedCarResponse,
+    FlagVerificationUpdate,
+    RawDetectionCreate,
+    RawDetectionResponse,
+)
 from app.services.decision_engine import process_detection
+from app.services.ai_inference import analyse_capture
 from app.models.domain import FlaggedCar, Parking
 from app.api.auth import get_current_user
 from app.models.domain import User
 
 
 router = APIRouter(tags=["Enforcement"])
+
+
+@router.post("/captures", response_model=RawDetectionResponse, status_code=201)
+async def receive_raw_capture(capture: RawDetectionCreate, db: AsyncSession = Depends(get_db)):
+    """
+    Accepts a raw camera capture, runs OCR internally, then forwards the
+    normalized detection into the existing decision engine.
+    """
+    analysis = await analyse_capture(
+        image_base64=capture.image_base64,
+        latitude=capture.latitude,
+        longitude=capture.longitude,
+        timestamp=capture.timestamp,
+        officer_id=capture.officer_id,
+        device_id=capture.device_id,
+    )
+
+    detection = DetectionCreate(
+        car_registration_no=analysis.plate_text,
+        parking_id=capture.parking_id,
+        confidence_score=analysis.plate_confidence,
+        evidence_image_url=analysis.evidence_image_url,
+    )
+
+    new_flag = await process_detection(db, detection)
+    if new_flag:
+        await db.commit()
+        await db.refresh(new_flag)
+        return RawDetectionResponse(
+            status="flagged",
+            flag_id=new_flag.id,
+            type=new_flag.type,
+            request_id=analysis.request_id,
+            timestamp=analysis.timestamp,
+            parking_id=capture.parking_id,
+            detected_plate=analysis.plate_text,
+            confidence_score=analysis.plate_confidence,
+            requires_human_verification=new_flag.requires_human_verification,
+            plate_obscured=analysis.plate_obscured,
+            vehicle_color=analysis.vehicle_color,
+            vehicle_type=analysis.vehicle_type,
+            evidence_image_url=analysis.evidence_image_url,
+            analysis_notes=analysis.analysis_notes,
+            model_version=analysis.model_version,
+        )
+
+    return RawDetectionResponse(
+        status="ignored",
+        message="Legally parked or duplicate detection.",
+        request_id=analysis.request_id,
+        timestamp=analysis.timestamp,
+        parking_id=capture.parking_id,
+        detected_plate=analysis.plate_text,
+        confidence_score=analysis.plate_confidence,
+        requires_human_verification=analysis.plate_confidence < 0.85,
+        plate_obscured=analysis.plate_obscured,
+        vehicle_color=analysis.vehicle_color,
+        vehicle_type=analysis.vehicle_type,
+        evidence_image_url=analysis.evidence_image_url,
+        analysis_notes=analysis.analysis_notes,
+        model_version=analysis.model_version,
+    )
 
 @router.post("/detections", status_code=201)
 async def receive_detection(detection: DetectionCreate, db: AsyncSession = Depends(get_db)):

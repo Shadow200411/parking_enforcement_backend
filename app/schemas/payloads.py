@@ -14,6 +14,37 @@ class DetectionCreate(BaseModel):
     confidence_score: float = Field(..., ge=0.0, le=1.0, description="The confidence score of the detection")
     
     evidence_image_url: Optional[str] = Field(None, description="Path to the saved evidence image")
+
+
+class RawDetectionCreate(BaseModel):
+    """Raw evidence captured by the officer device before OCR is applied."""
+    image_base64: str = Field(..., description="Base64-encoded JPEG or PNG of the vehicle")
+    parking_id: int = Field(..., description="The ID of the parking lot the officer is currently in")
+    latitude: Optional[float] = Field(None, description="GPS latitude from the officer's device")
+    longitude: Optional[float] = Field(None, description="GPS longitude from the officer's device")
+    timestamp: Optional[str] = Field(None, description="ISO-8601 capture time")
+    officer_id: Optional[str] = Field(None, description="Officer identifier from the capture device")
+    device_id: Optional[str] = Field(None, description="Device identifier from the capture device")
+
+
+class RawDetectionResponse(BaseModel):
+    """Combined AI analysis and enforcement outcome."""
+    status: str
+    flag_id: Optional[int] = None
+    type: Optional[FlagType] = None
+    message: Optional[str] = None
+    request_id: str
+    timestamp: str
+    parking_id: int
+    detected_plate: str
+    confidence_score: float
+    requires_human_verification: bool
+    plate_obscured: bool
+    vehicle_color: Optional[str]
+    vehicle_type: Optional[str]
+    evidence_image_url: str
+    analysis_notes: str
+    model_version: str
     
 #2.Outgoing data (to the frontend dashboard)
 class FlaggedCarResponse(BaseModel):
