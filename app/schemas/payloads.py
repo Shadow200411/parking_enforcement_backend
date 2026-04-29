@@ -76,7 +76,6 @@ class ParkingResponse(BaseModel):
 
 # 2. Outgoing data (to the frontend dashboard)
 class FlaggedCarResponse(BaseModel):
-    """The JSON structure we will send back to the frontend"""
     id: int
     type: FlagType
     car_registration_no: str
@@ -87,8 +86,23 @@ class FlaggedCarResponse(BaseModel):
     requires_human_verification: bool
     verified_by_human: bool
     verification_notes: Optional[str]
+    
     model_config = ConfigDict(from_attributes=True)
 
+    @field_validator("evidence_image_url")
+    @classmethod
+    def convert_url_to_base64(cls, v: str) -> str:
+        if not v or v.startswith("data:"):
+            return v
+        
+        filepath = Path("/code/app") / v.lstrip("/")
+        
+        if filepath.exists():
+            with open(filepath, "rb") as image_file:
+                encoded = base64.b64encode(image_file.read()).decode("utf-8")
+                return f"data:image/jpeg;base64,{encoded}"
+        
+        return f"FILE_NOT_FOUND: {filepath}"
 # 3. Verification update (from the human operator)
 class FlagVerificationUpdate(BaseModel):
     """When a human reviews a low-confidence flag, they will send this."""
