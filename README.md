@@ -38,6 +38,45 @@ Once the container is running, populate your database with test parking lots, ca
 docker compose exec web python -m app.seed
 ```
 
+The demo seed now stores registration numbers in OCR-friendly format such as `CJ01AAA` or `B133PKG`, without dashes.
+
+### 4. Add more demo vehicles
+
+If you want to preload real presentation plates, create a local override file from the example:
+
+```bash
+cp app/seed_overrides.example.json app/seed_overrides.json
+```
+
+Then edit `app/seed_overrides.json` and rerun:
+
+```bash
+docker compose exec web python -m app.seed
+```
+
+Use this shape for extra cars and subscriptions:
+
+```json
+{
+  "cars": [
+    {
+      "registration_no": "B133PKG",
+      "make": "Mercedes-Benz",
+      "model": "Sprinter",
+      "color": "Gray"
+    }
+  ],
+  "subscriptions": [
+    {
+      "car_registration_no": "B133PKG",
+      "parking_id": 1,
+      "begin_date": "2026-04-01",
+      "expiration_date": "2026-06-01"
+    }
+  ]
+}
+```
+
 ## Test Accounts
 
 The seed script generates the following accounts for testing JWT authentication:
@@ -85,3 +124,7 @@ Click the green **Authorize** button at the top right of the page. Enter the adm
 ### 4. Act as an officer
 
 Go to the locked `PATCH /api/v1/flags/{flag_id}/verify` endpoint. Enter the ID of a low-confidence flag and approve or reject it.
+
+## Frontend Location Note
+
+Browser geolocation works on `localhost` and HTTPS. If you open the Angular frontend from a phone over plain HTTP on your local network, the browser will block location access even if the button is visible.

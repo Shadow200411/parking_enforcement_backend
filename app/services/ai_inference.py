@@ -1,5 +1,4 @@
 import base64
-import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -12,8 +11,8 @@ from fastapi import HTTPException
 from paddleocr import PaddleOCR
 from starlette.concurrency import run_in_threadpool
 
+from app.core.plates import normalize_registration_no
 
-PLATE_PATTERN = re.compile(r"[^A-Z0-9\s\-]")
 EVIDENCE_DIR = Path(__file__).resolve().parent.parent / "static" / "evidence"
 
 _ocr_engine: Optional[PaddleOCR] = None
@@ -158,9 +157,7 @@ def preprocess_for_ocr(roi: np.ndarray) -> np.ndarray:
 
 
 def clean_plate_text(raw: str) -> str:
-    upper = raw.upper()
-    cleaned = PLATE_PATTERN.sub("", upper)
-    return " ".join(cleaned.split()).strip()
+    return normalize_registration_no(raw)
 
 
 def normalize_box(box: list[list[float]], width: int, height: int) -> tuple[int, int, int, int]:
@@ -251,7 +248,7 @@ def expand_plate_to_vehicle_crop(img: np.ndarray, box: tuple[int, int, int, int]
 
 def pick_best_plate_candidate(candidates: list[dict]) -> Optional[dict]:
     for candidate in sorted(candidates, key=lambda item: item["confidence"], reverse=True):
-        if len(candidate["text"].replace(" ", "")) >= 3:
+        if len(candidate["text"]) >= 3:
             return candidate
     return None
 

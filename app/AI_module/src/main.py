@@ -172,14 +172,14 @@ def preprocess_for_ocr(roi: np.ndarray) -> np.ndarray:
 # OCR helpers
 # ---------------------------------------------------------------------------
 
-PLATE_PATTERN = re.compile(r"[^A-Z0-9\s\-]")
+PLATE_PATTERN = re.compile(r"[^A-Z0-9]")
 
 
 def clean_plate_text(raw: str) -> str:
-    """Uppercase, strip noise chars, collapse whitespace."""
+    """Uppercase and strip everything except letters and digits."""
     upper = raw.upper()
     cleaned = PLATE_PATTERN.sub("", upper)
-    return " ".join(cleaned.split()).strip()
+    return cleaned.strip()
 
 
 def normalize_box(box: list[list[float]], width: int, height: int) -> tuple[int, int, int, int]:

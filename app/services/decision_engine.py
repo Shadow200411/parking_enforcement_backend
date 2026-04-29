@@ -1,6 +1,6 @@
 from datetime import datetime
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy import select, and_
+from sqlalchemy import select
 
 from app.models.domain import Car, Subscription, FlaggedCar, FlagType
 from app.schemas.payloads import DetectionCreate
@@ -97,13 +97,5 @@ async def process_detection(db: AsyncSession, detection: DetectionCreate) -> Fla
     )
     
     db.add(new_flag)
-    
-    #7.Update Cache
-    detection_cache.mark_as_flagged(
-        plate=car.registration_no,
-        parking_id=detection.parking_id,
-        confidence=detection.confidence_score,
-        was_auto_flagged=not requires_human
-    )
-    
+
     return new_flag

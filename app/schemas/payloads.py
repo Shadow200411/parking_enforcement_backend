@@ -1,7 +1,8 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional
 
+from app.core.plates import normalize_registration_no
 from app.models.domain import FlagType
 
 
@@ -14,6 +15,14 @@ class DetectionCreate(BaseModel):
     confidence_score: float = Field(..., ge=0.0, le=1.0, description="The confidence score of the detection")
     
     evidence_image_url: Optional[str] = Field(None, description="Path to the saved evidence image")
+
+    @field_validator("car_registration_no")
+    @classmethod
+    def normalize_plate(cls, value: str) -> str:
+        normalized = normalize_registration_no(value)
+        if not normalized:
+            raise ValueError("car_registration_no must contain letters or digits")
+        return normalized
 
 
 class RawDetectionCreate(BaseModel):
@@ -45,6 +54,16 @@ class RawDetectionResponse(BaseModel):
     evidence_image_url: str
     analysis_notes: str
     model_version: str
+
+
+class ParkingResponse(BaseModel):
+    """Parking lot metadata used by the capture client."""
+    id: int
+    name: str
+    location: str
+    capacity: int
+
+    model_config = ConfigDict(from_attributes=True)
     
 #2.Outgoing data (to the frontend dashboard)
 class FlaggedCarResponse(BaseModel):

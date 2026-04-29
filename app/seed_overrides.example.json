@@ -1,0 +1,44 @@
+{
+  "parkings": [
+    {
+      "id": 10,
+      "name": "Demo Overflow Lot",
+      "location": "45 Expo Blvd",
+      "capacity": 120
+    }
+  ],
+  "cars": [
+    {
+      "registration_no": "B133PKG",
+      "make": "Mercedes-Benz",
+      "model": "Sprinter",
+      "color": "Gray"
+    },
+    {
+      "registration_no": "CJ321XYZ",
+      "make": "Dacia",
+      "model": "Duster",
+      "color": "White"
+    }
+  ],
+  "subscriptions": [
+    {
+      "car_registration_no": "B133PKG",
+      "parking_id": 1,
+      "begin_date": "2026-04-01",
+      "expiration_date": "2026-06-01"
+    },
+    {
+      "car_registration_no": "CJ321XYZ",
+      "parking_id": 10,
+      "begin_date": "2026-04-15",
+      "expiration_date": "2026-06-30"
+    }
+  ],
+  "users": [
+    {
+      "fullname": "demoofficer",
+      "password": "demo123"
+    }
+  ]
+}
