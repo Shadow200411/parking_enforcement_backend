@@ -158,9 +158,28 @@ async def verify_flag(flag_id: int, update_data: FlagVerificationUpdate, db: Asy
     flag.requires_human_verification = False
     flag.verification_notes = update_data.notes
     
+    
     if not update_data.is_valid_violation:
         flag.verification_notes = f"[REJECTED BY OFFICER] {update_data.notes or ''}"
-    
+  
+    # Handle corrected plate if provided
+    if update_data.corrected_plate:
+        normalized_plate = normalize_registration_no(update_data.corrected_plate)
+        if normalized_plate:
+            # Ensure the car exists in the DB so we don't break the Foreign Key constraint
+            car = await db.get(Car, normalized_plate)
+            if not car:
+                car = Car(
+                    registration_no=normalized_plate,
+                    make="Unknown",
+                    model="Unknown",
+                    color="Unknown"
+                )
+                db.add(car)
+                await db.flush()  # Flush so the new car is available before updating the flag
+                
+            flag.car_registration_no = normalized_plate
+
     await db.commit()
     await db.refresh(flag)
     return flag
