@@ -1,10 +1,13 @@
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional
+import base64
+from pathlib import Path
 
 from app.core.plates import normalize_registration_no
 from app.models.domain import FlagType
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 
 #1.Incoming data (from the AI camera)
 class DetectionCreate(BaseModel):
@@ -55,6 +58,18 @@ class RawDetectionResponse(BaseModel):
     analysis_notes: str
     model_version: str
 
+    @field_validator("evidence_image_url")
+    @classmethod
+    def convert_url_to_base64(cls, v: str) -> str:
+        if not v or v.startswith("data:"):
+            return v
+        filepath = BASE_DIR / v.lstrip("/")
+        if filepath.exists():
+            with open(filepath, "rb") as image_file:
+                encoded = base64.b64encode(image_file.read()).decode("utf-8")
+                return f"data:image/jpeg;base64,{encoded}"
+        return v
+
 
 class ParkingResponse(BaseModel):
     """Parking lot metadata used by the capture client."""
@@ -81,12 +96,4 @@ class FlaggedCarResponse(BaseModel):
     verified_by_human: bool
     verification_notes: Optional[str]
     
-    #Pydantic v2 cofiguration to read SQLAlchemy database models directly
-    model_config = ConfigDict(from_attributes=True)
-    
-#3.Verification update (from the human operator)
-class FlagVerificationUpdate(BaseModel):
-    """When a human reviews a low-confidence flag, they will send this."""
-    is_valid_violation: bool = Field(...,description="Did the human confirm this is a real violation?")
-    notes: Optional[str] = Field(None, description="Optional notes from the officer")
-    corrected_plate: Optional[str] = Field(None, description="If the AI misread the plate, the human can type the real one here")
+    #Pydantic v2 cofigur
