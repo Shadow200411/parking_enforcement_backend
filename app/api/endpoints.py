@@ -15,9 +15,10 @@ from app.schemas.payloads import (
 from app.services.decision_engine import process_detection
 from app.services.ai_inference import analyse_capture
 from app.services.cache import detection_cache
-from app.models.domain import FlaggedCar, Parking
+from app.models.domain import FlaggedCar, Parking, Car
 from app.api.auth import get_current_user
 from app.models.domain import User
+from app.core.plates import normalize_registration_no
 
 
 router = APIRouter(tags=["Enforcement"])
