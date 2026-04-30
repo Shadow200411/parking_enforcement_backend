@@ -166,14 +166,15 @@ async def seed():
 
         print("\nSeed complete. Demo cases ready:")
         print("  CJ01AAA   in lot 1 → no violation (valid sub)")
-        print("  CJ02BBB   in lot 1 → car_in_wrong_parking")
-        print("  CJ03CCC   in lot 1 → subscription_expired")
+        print("  CJ02BBB   in lot 2 → car_in_wrong_parking")
         print("  CJ04DDD   in lot 1 → no_subscription")
         print("  CJ05EEE   in lot 1 → subscription_close_to_expiration (scheduler)")
-        print("  CJ06FFF   in lot 1 → requires_human_verification if confidence < 0.85")
         print("  CJ07GGG   in lots 1/2/3 → no violation")
-        print("  TM404DDD  in any lot → no_subscription")
         print("  B303CCC   in lot 1 → subscription_expired")
+        print("  TM404DDD  in any lot → no_subscription")
+        print("  B999XZA   in lot 4 → subscription_expired")
+        print("  CJ82RST   in lot 3 → no violation (valid sub)")
+        
         print("\nLogin credentials:")
         for user in users:
             print(f"  {user['fullname']} / {user['password']}")
