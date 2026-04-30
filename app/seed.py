@@ -39,10 +39,10 @@ PARKINGS = [
 CARS = [
     {"registration_no": "CJ01AAA", "make": "Dacia", "model": "Logan", "color": "White"},
     {"registration_no": "CJ02BBB", "make": "Volkswagen", "model": "Golf", "color": "Black"},
-    {"registration_no": "CJ03CCC", "make": "Renault", "model": "Clio", "color": "Red"},
+    {"registration_no": "B999XZA", "make": "Renault", "model": "Clio", "color": "Red"},
     {"registration_no": "CJ04DDD", "make": "Ford", "model": "Focus", "color": "Blue"},
     {"registration_no": "CJ05EEE", "make": "Toyota", "model": "Yaris", "color": "Silver"},
-    {"registration_no": "CJ06FFF", "make": "Skoda", "model": "Octavia", "color": "Grey"},
+    {"registration_no": "CJ82RST", "make": "Skoda", "model": "Octavia", "color": "Grey"},
     {"registration_no": "CJ07GGG", "make": "BMW", "model": "320i", "color": "Black"},
     {"registration_no": "B101AAA", "make": "Audi", "model": "A4", "color": "Gray"},
     {"registration_no": "B202BBB", "make": "Mercedes-Benz", "model": "C200", "color": "Black"},
