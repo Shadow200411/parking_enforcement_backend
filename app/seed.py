@@ -56,9 +56,9 @@ CARS = [
 SUBSCRIPTIONS = [
     {"car_registration_no": "CJ01AAA", "parking_id": 1, "begin_date": today - timedelta(days=30), "expiration_date": today + timedelta(days=60)},
     {"car_registration_no": "CJ02BBB", "parking_id": 2, "begin_date": today - timedelta(days=10), "expiration_date": today + timedelta(days=20)},
-    {"car_registration_no": "CJ03CCC", "parking_id": 1, "begin_date": today - timedelta(days=90), "expiration_date": today - timedelta(days=5)},
+    {"car_registration_no": "B999XZA", "parking_id": 4, "begin_date": today - timedelta(days=90), "expiration_date": today - timedelta(days=5)},
     {"car_registration_no": "CJ05EEE", "parking_id": 1, "begin_date": today - timedelta(days=25), "expiration_date": today + timedelta(days=5)},
-    {"car_registration_no": "CJ06FFF", "parking_id": 1, "begin_date": today - timedelta(days=5), "expiration_date": today + timedelta(days=25)},
+    {"car_registration_no": "CJ82RST", "parking_id": 3, "begin_date": today - timedelta(days=5), "expiration_date": today + timedelta(days=25)},
     {"car_registration_no": "CJ07GGG", "parking_id": 1, "begin_date": today - timedelta(days=15), "expiration_date": today + timedelta(days=45)},
     {"car_registration_no": "CJ07GGG", "parking_id": 2, "begin_date": today - timedelta(days=15), "expiration_date": today + timedelta(days=45)},
     {"car_registration_no": "CJ07GGG", "parking_id": 3, "begin_date": today - timedelta(days=15), "expiration_date": today + timedelta(days=45)},

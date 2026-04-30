@@ -10,7 +10,7 @@ class DetectionCache:
         """Clears the cache automatically if it's a new day"""
         today = datetime.now().date()
         if today > self._last_cleared:
-            self._cache.clear()
+            self.cache.clear()
             self._last_cleared = today
             
     def should_process_detection(self, plate: str, parking_id: int, confidence: float) -> bool:
