@@ -8,17 +8,35 @@ from app.schemas.payloads import (
     DetectionCreate,
     FlaggedCarResponse,
     FlagVerificationUpdate,
+    ParkingResponse,
     RawDetectionCreate,
     RawDetectionResponse,
 )
 from app.services.decision_engine import process_detection
 from app.services.ai_inference import analyse_capture
-from app.models.domain import FlaggedCar, Parking
+from app.services.cache import detection_cache
+from app.models.domain import FlaggedCar, Parking, Car
 from app.api.auth import get_current_user
 from app.models.domain import User
+from app.core.plates import normalize_registration_no
 
 
 router = APIRouter(tags=["Enforcement"])
+
+
+async def require_parking(db: AsyncSession, parking_id: int) -> Parking:
+    parking = await db.get(Parking, parking_id)
+    if not parking:
+        raise HTTPException(status_code=404, detail=f"Parking lot {parking_id} not found")
+    return parking
+
+
+@router.get("/parkings", response_model=List[ParkingResponse])
+async def get_parkings(db: AsyncSession = Depends(get_db)):
+    """Returns parking lots for the mobile capture client."""
+    stmt = select(Parking).order_by(Parking.id.asc())
+    result = await db.execute(stmt)
+    return result.scalars().all()
 
 
 @router.post("/captures", response_model=RawDetectionResponse, status_code=201)
@@ -27,6 +45,8 @@ async def receive_raw_capture(capture: RawDetectionCreate, db: AsyncSession = De
     Accepts a raw camera capture, runs OCR internally, then forwards the
     normalized detection into the existing decision engine.
     """
+    await require_parking(db, capture.parking_id)
+
     analysis = await analyse_capture(
         image_base64=capture.image_base64,
         latitude=capture.latitude,
@@ -47,6 +67,12 @@ async def receive_raw_capture(capture: RawDetectionCreate, db: AsyncSession = De
     if new_flag:
         await db.commit()
         await db.refresh(new_flag)
+        detection_cache.mark_as_flagged(
+            plate=new_flag.car_registration_no,
+            parking_id=new_flag.parking_id,
+            confidence=new_flag.confidence_score or analysis.plate_confidence,
+            was_auto_flagged=not new_flag.requires_human_verification,
+        )
         return RawDetectionResponse(
             status="flagged",
             flag_id=new_flag.id,
@@ -88,12 +114,20 @@ async def receive_detection(detection: DetectionCreate, db: AsyncSession = Depen
     Receives a plate detection from the AI camera.
     Passes it to the Decision Engine to determine if it's a violation.
     """
+    await require_parking(db, detection.parking_id)
+
     new_flag = await process_detection(db, detection)
     
     if new_flag:
         #Added these 2 lines so we get the data after the database has commited it and generated the id
         await db.commit()
         await db.refresh(new_flag)
+        detection_cache.mark_as_flagged(
+            plate=new_flag.car_registration_no,
+            parking_id=new_flag.parking_id,
+            confidence=new_flag.confidence_score or detection.confidence_score,
+            was_auto_flagged=not new_flag.requires_human_verification,
+        )
         return {"status": "flagged", "flag_id": new_flag.id, "type": new_flag.type}
     
     return {"status": "ignored", "message": "Legally parked or dupilcate detection."}
@@ -124,9 +158,28 @@ async def verify_flag(flag_id: int, update_data: FlagVerificationUpdate, db: Asy
     flag.requires_human_verification = False
     flag.verification_notes = update_data.notes
     
+    
     if not update_data.is_valid_violation:
         flag.verification_notes = f"[REJECTED BY OFFICER] {update_data.notes or ''}"
-    
+  
+    # Handle corrected plate if provided
+    if update_data.corrected_plate:
+        normalized_plate = normalize_registration_no(update_data.corrected_plate)
+        if normalized_plate:
+            # Ensure the car exists in the DB so we don't break the Foreign Key constraint
+            car = await db.get(Car, normalized_plate)
+            if not car:
+                car = Car(
+                    registration_no=normalized_plate,
+                    make="Unknown",
+                    model="Unknown",
+                    color="Unknown"
+                )
+                db.add(car)
+                await db.flush()  # Flush so the new car is available before updating the flag
+                
+            flag.car_registration_no = normalized_plate
+
     await db.commit()
     await db.refresh(flag)
     return flag

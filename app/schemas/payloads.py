@@ -1,20 +1,29 @@
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_validator
 from datetime import datetime
 from typing import Optional
+import base64
+from pathlib import Path
 
+from app.core.plates import normalize_registration_no
 from app.models.domain import FlagType
 
+BASE_DIR = Path(__file__).resolve().parent.parent
 
-#1.Incoming data (from the AI camera)
+# 1. Incoming data (from the AI camera)
 class DetectionCreate(BaseModel):
     """The JSON structure we expect from the AI model to send us"""
-    car_registration_no: str = Field(..., descritpion="The detected licence plate")
+    car_registration_no: str = Field(..., description="The detected licence plate")
     parking_id: int = Field(..., description="The ID of the parking lot the police is currently in")
-    
     confidence_score: float = Field(..., ge=0.0, le=1.0, description="The confidence score of the detection")
-    
     evidence_image_url: Optional[str] = Field(None, description="Path to the saved evidence image")
 
+    @field_validator("car_registration_no")
+    @classmethod
+    def normalize_plate(cls, value: str) -> str:
+        normalized = normalize_registration_no(value)
+        if not normalized:
+            raise ValueError("car_registration_no must contain letters or digits")
+        return normalized
 
 class RawDetectionCreate(BaseModel):
     """Raw evidence captured by the officer device before OCR is applied."""
@@ -25,7 +34,6 @@ class RawDetectionCreate(BaseModel):
     timestamp: Optional[str] = Field(None, description="ISO-8601 capture time")
     officer_id: Optional[str] = Field(None, description="Officer identifier from the capture device")
     device_id: Optional[str] = Field(None, description="Device identifier from the capture device")
-
 
 class RawDetectionResponse(BaseModel):
     """Combined AI analysis and enforcement outcome."""
@@ -45,29 +53,59 @@ class RawDetectionResponse(BaseModel):
     evidence_image_url: str
     analysis_notes: str
     model_version: str
-    
-#2.Outgoing data (to the frontend dashboard)
+
+    @field_validator("evidence_image_url")
+    @classmethod
+    def convert_url_to_base64(cls, v: str) -> str:
+        if not v or v.startswith("data:"):
+            return v
+        filepath = BASE_DIR / v.lstrip("/")
+        if filepath.exists():
+            with open(filepath, "rb") as image_file:
+                encoded = base64.b64encode(image_file.read()).decode("utf-8")
+                return f"data:image/jpeg;base64,{encoded}"
+        return v
+
+class ParkingResponse(BaseModel):
+    """Parking lot metadata used by the capture client."""
+    id: int
+    name: str
+    location: str
+    capacity: int
+    model_config = ConfigDict(from_attributes=True)
+
+# 2. Outgoing data (to the frontend dashboard)
 class FlaggedCarResponse(BaseModel):
-    """The JSON structure we will send back to the frontend"""
     id: int
     type: FlagType
     car_registration_no: str
     parking_id: int
     detected_at: datetime
-    
     confidence_score: Optional[float]
     evidence_image_url: Optional[str]
-    
     requires_human_verification: bool
     verified_by_human: bool
     verification_notes: Optional[str]
     
-    #Pydantic v2 cofiguration to read SQLAlchemy database models directly
     model_config = ConfigDict(from_attributes=True)
-    
-#3.Verification update (from the human operator)
+
+    @field_validator("evidence_image_url")
+    @classmethod
+    def convert_url_to_base64(cls, v: str) -> str:
+        if not v or v.startswith("data:"):
+            return v
+        
+        filepath = Path("/code/app") / v.lstrip("/")
+        
+        if filepath.exists():
+            with open(filepath, "rb") as image_file:
+                encoded = base64.b64encode(image_file.read()).decode("utf-8")
+                return f"data:image/jpeg;base64,{encoded}"
+        
+        return f"FILE_NOT_FOUND: {filepath}"
+# 3. Verification update (from the human operator)
 class FlagVerificationUpdate(BaseModel):
     """When a human reviews a low-confidence flag, they will send this."""
-    is_valid_violation: bool = Field(...,description="Did the human confirm this is a real violation?")
+    is_valid_violation: bool = Field(..., description="Did the human confirm this is a real violation?")
     notes: Optional[str] = Field(None, description="Optional notes from the officer")
     corrected_plate: Optional[str] = Field(None, description="If the AI misread the plate, the human can type the real one here")
